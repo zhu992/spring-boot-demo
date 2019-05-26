@@ -1,0 +1,11 @@
+/target/*
+/.settings
+/.classpath
+/.project
+/.idea
+*.epoch
+*.log
+*.iml
+*.class
+*.jar
+*.lst

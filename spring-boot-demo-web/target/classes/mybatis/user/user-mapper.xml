@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zwy.dao.mapper.UserMapper">
+    <cache eviction="LRU" flushInterval="60000" size="512" readOnly="true"/>
+    <sql id="columns">
+        id,username,password,role
+    </sql>
+
+    <!--  插入  -->
+    <insert id="insert" parameterType="User">
+        insert into user(username,password,role) values(#{username},#{password},#{role})
+        <selectKey keyProperty="id" resultType="java.lang.Long">
+            SELECT LAST_INSERT_ID() AS value
+        </selectKey>
+    </insert>
+
+
+    <!-- 批量插入数据1 -->
+    <insert id="insertBatch" parameterType="java.util.List" useGeneratedKeys="true">
+        <selectKey resultType="long" keyProperty="id" order="AFTER">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        insert into user(username,password,role) values
+        <foreach collection="users" item="user" index="index" separator=",">
+            (#{user.username},#{user.password},#{user.role})
+        </foreach>
+    </insert>
+
+    <!-- 批量插入数据2 这种方式没有测试通过 -->
+    <insert id="insertBatch2" parameterType="java.util.List">
+        <foreach collection="users" item="user" index="index" separator=";">
+            insert into user
+            <trim prefix="(" suffix=")" suffixOverrides=",">
+                username,password,role,
+            </trim>
+            <trim prefix="values (" suffix=")" suffixOverrides=",">
+                #{user.username},#{user.password},#{user.role}
+            </trim>
+        </foreach>
+    </insert>
+
+    <!-- 批量更新数据 测试没通过 -->
+    <update id="updateBatch2">
+        <foreach collection="users" item="user" index="index" separator=";">
+            update user set
+            username=#{user.username},
+            password=#{user.password},
+            role=#{user.role}
+            where id=#{user.id}
+        </foreach>;
+    </update>
+
+
+    <update id="updateBatch" parameterType="java.util.List">
+        update user
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="username=case" suffix="end,">
+                <foreach collection="users" item="user" index="index">when id=#{user.id} then #{user.username}</foreach>
+            </trim>
+            <trim prefix="password=case" suffix="end,">
+                <foreach collection="users" item="user" index="index">when id=#{user.id} then #{user.password}</foreach>
+            </trim>
+            <trim prefix="role=case" suffix="end,">
+                <foreach collection="users" item="user" index="index">when id=#{user.id} then #{user.role}</foreach>
+            </trim>
+        </trim>
+        where id in
+        <foreach collection="users" index="index" item="user" separator="," open="(" close=")">#{user.id}</foreach>
+    </update>
+</mapper>
